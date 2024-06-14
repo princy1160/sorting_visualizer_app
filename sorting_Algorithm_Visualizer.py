@@ -21,8 +21,8 @@ class DrawInformation:
     FONT = pygame.font.SysFont('comicsans', 20)
     LARGE_FONT = pygame.font.SysFont('comicsans', 30)
 
-    SIDE_PAD = 100
-    TOP_PAD = 150
+    SIDE_PAD = 400
+    TOP_PAD = 250
 
     def __init__(self, width, height, lst):
         self.width = width
@@ -50,7 +50,7 @@ def draw(draw_info, algo_name, ascending):
     controls = draw_info.FONT.render("R - Reset | SPACE - Start Sorting | A - Ascending | D - Descending", 1, draw_info.BLACK)
     draw_info.window.blit(controls, (draw_info.width//2 - controls.get_width()//2, 45))
 
-    sorting = draw_info.FONT.render("I - Insertion Sort | B - Bubble Sort", 1, draw_info.BLACK)
+    sorting = draw_info.FONT.render("I - Insertion Sort | B - Bubble Sort | Q - Quick Sort | M - Merge Sort | S - Selection Sort", 1, draw_info.BLACK)
     draw_info.window.blit(sorting, (draw_info.width//2 - sorting.get_width()//2, 75))
 
     draw_list(draw_info)
@@ -121,6 +121,92 @@ def insertion_sort(draw_info, ascending=True):
             draw_list(draw_info, {i: draw_info.GREEN, i - 1: draw_info.RED}, True)
             yield True
 
+def selection_sort(draw_info, ascending=True):
+    lst = draw_info.lst
+
+    for i in range(len(lst)):
+        min_idx = i
+        for j in range(i + 1, len(lst)):
+            if (lst[j] < lst[min_idx] and ascending) or (lst[j] > lst[min_idx] and not ascending):
+                min_idx = j
+        lst[i], lst[min_idx] = lst[min_idx], lst[i]
+        draw_list(draw_info, {i: draw_info.GREEN, min_idx: draw_info.RED}, True)
+        yield True
+
+def quick_sort(draw_info, ascending=True):
+    lst = draw_info.lst
+
+    def _quick_sort(lst, low, high):
+        if low < high:
+            pi = partition(lst, low, high)
+            yield from _quick_sort(lst, low, pi - 1)
+            yield from _quick_sort(lst, pi + 1, high)
+
+    def partition(lst, low, high):
+        pivot = lst[high]
+        i = low - 1
+
+        for j in range(low, high):
+            if (lst[j] <= pivot and ascending) or (lst[j] >= pivot and not ascending):
+                i += 1
+                lst[i], lst[j] = lst[j], lst[i]
+                draw_list(draw_info, {i: draw_info.GREEN, j: draw_info.RED}, True)
+                yield True
+
+        lst[i + 1], lst[high] = lst[high], lst[i + 1]
+        draw_list(draw_info, {i + 1: draw_info.GREEN, high: draw_info.RED}, True)
+        yield True
+
+        return i + 1
+
+    yield from _quick_sort(lst, 0, len(lst) - 1)
+
+def merge_sort(draw_info, ascending=True):
+    lst = draw_info.lst
+
+    def _merge_sort(lst, left, right):
+        if left < right:
+            middle = (left + right) // 2
+            yield from _merge_sort(lst, left, middle)
+            yield from _merge_sort(lst, middle + 1, right)
+            yield from merge(lst, left, middle, right)
+
+    def merge(lst, left, middle, right):
+        left_copy = lst[left:middle + 1]
+        right_copy = lst[middle + 1:right + 1]
+
+        left_copy_index = 0
+        right_copy_index = 0
+        sorted_index = left
+
+        while left_copy_index < len(left_copy) and right_copy_index < len(right_copy):
+            if (left_copy[left_copy_index] <= right_copy[right_copy_index] and ascending) or (left_copy[left_copy_index] >= right_copy[right_copy_index] and not ascending):
+                lst[sorted_index] = left_copy[left_copy_index]
+                left_copy_index += 1
+            else:
+                lst[sorted_index] = right_copy[right_copy_index]
+                right_copy_index += 1
+
+            draw_list(draw_info, {sorted_index: draw_info.GREEN}, True)
+            yield True
+            sorted_index += 1
+
+        while left_copy_index < len(left_copy):
+            lst[sorted_index] = left_copy[left_copy_index]
+            left_copy_index += 1
+            draw_list(draw_info, {sorted_index: draw_info.GREEN}, True)
+            yield True
+            sorted_index += 1
+
+        while right_copy_index < len(right_copy):
+            lst[sorted_index] = right_copy[right_copy_index]
+            right_copy_index += 1
+            draw_list(draw_info, {sorted_index: draw_info.GREEN}, True)
+            yield True
+            sorted_index += 1
+
+    yield from _merge_sort(lst, 0, len(lst) - 1)
+
 def main():
     run = True
     clock = pygame.time.Clock()
@@ -174,6 +260,15 @@ def main():
             elif event.key == pygame.K_b and not sorting:
                 sorting_algorithm = bubble_sort
                 sorting_algo_name = "Bubble Sort"
+            elif event.key == pygame.K_q and not sorting:
+                sorting_algorithm = quick_sort
+                sorting_algo_name = "Quick Sort"
+            elif event.key == pygame.K_m and not sorting:
+                sorting_algorithm = merge_sort
+                sorting_algo_name = "Merge Sort"
+            elif event.key == pygame.K_s and not sorting:
+                sorting_algorithm = selection_sort
+                sorting_algo_name = "Selection Sort"
 
     pygame.quit()
 
